@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { FaEnvelope, FaLock, FaDiscord, FaGoogle, FaCheck } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaDiscord, FaGoogle, FaCheck, FaGamepad } from 'react-icons/fa';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 

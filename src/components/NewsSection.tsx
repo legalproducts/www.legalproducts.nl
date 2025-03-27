@@ -23,19 +23,14 @@ const NewsSection = () => {
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        const response = await fetch('/api/news');
+        const response = await fetch('/api/news?all=true'); // Voeg 'all=true' toe
         const data = await response.json();
         const newsArray = Array.isArray(data) ? data : data.news || [];
         
-        // Improved date formatting
+        // Ensure proper date formatting
         const formattedData = newsArray.map((item: NewsItem) => ({
           ...item,
-          date: new Date(item.date + 'T00:00:00').toLocaleDateString('nl-NL', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          })
+          date: formatDate(item.date), // Format the date here
         }));
         
         setNewsItems(formattedData);
@@ -50,7 +45,13 @@ const NewsSection = () => {
     fetchNews();
   }, []);
 
-  // Beperk tot maximaal 3 nieuws items
+  const formatDate = (dateString: string) => {
+    const options: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const date = new Date(dateString);
+    return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleDateString('nl-NL', options);
+  };
+
+  // Limit to a maximum of 3 news items
   const displayedItems = newsItems.slice(0, 3);
 
   const truncateDescription = (description: string) => {
@@ -66,6 +67,24 @@ const NewsSection = () => {
     return <div className="py-12 bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <p className="text-white">Loading...</p>
+      </div>
+    </div>;
+  }
+
+  // Add check for empty news array
+  if (!loading && displayedItems.length === 0) {
+    return <div className="py-12 bg-gray-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="lg:text-center mb-12">
+          <h2 className="text-base text-blue-600 font-semibold tracking-wide uppercase">Laatste nieuws</h2>
+          <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-white sm:text-4xl">
+            Blijf op de hoogte van onze ontwikkelingen
+          </p>
+        </div>
+        <div className="text-center py-10">
+          <p className="text-white text-xl">Er zijn momenteel geen nieuwsberichten beschikbaar.</p>
+          <p className="text-gray-400 mt-2">Kom later terug voor updates.</p>
+        </div>
       </div>
     </div>;
   }

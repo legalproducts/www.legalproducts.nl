@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
 function generateSlug(title: string): string {
   return title
@@ -8,21 +9,38 @@ function generateSlug(title: string): string {
     .replace(/(^-|-$)+/g, '');
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const url = new URL(request.url);
+    const countParam = url.searchParams.get('count');
+
+    if (countParam === 'true') {
+      // Return only the count of news items
+      const totalNews = await prisma.news.count();
+      return NextResponse.json({ count: totalNews });
+    }
+
     const currentDate = new Date();
+    const getAllParam = url.searchParams.get('all');
+    const getAll = getAllParam === 'true';
     
-    const news = await prisma.news.findMany({
+    const newsQuery = {
       where: {
-        date: {
-          lte: currentDate,
-        }
+        ...(getAll
+          ? {} // Geen filter toepassen als 'all=true'
+          : {
+              date: {
+                lte: currentDate, // Alleen nieuwsitems met een datum <= vandaag
+              },
+            }),
       },
       orderBy: {
-        date: 'desc'
+        date: Prisma.SortOrder.desc,
       },
-      take: 3
-    });
+      ...(getAll ? {} : { take: 3 }), // Alleen beperken tot 3 items als 'all' niet is ingesteld
+    };
+
+    const news = await prisma.news.findMany(newsQuery);
 
     // Improved date formatting
     const formattedNews = news.map(item => ({

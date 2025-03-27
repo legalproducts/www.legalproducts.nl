@@ -4,29 +4,43 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { FaDiscord, FaBars, FaTimes, FaUser, FaSignOutAlt } from 'react-icons/fa';
 import UserDropdown from './UserDropdown';
+import InfoBar from '@/components/InfoBar'; // Import InfoBar
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    // Check if user is logged in by looking for user data in storage
-    const userData = localStorage.getItem('user') || sessionStorage.getItem('user');
-    if (userData) {
-      const user = JSON.parse(userData);
-      setIsLoggedIn(true);
-      setUserName(user.name || 'Gebruiker');
-    }
+    const fetchUserData = async () => {
+      try {
+        const response = await fetch('/api/auth/user'); // Replace with your actual API endpoint
+        if (response.ok) {
+          const user = await response.json();
+          setIsLoggedIn(true);
+          setUserName(user.name || 'Gebruiker');
+          setIsAdmin(user.admin || false); // Check if the user is an admin
+        } else {
+          setIsLoggedIn(false);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user data:', error);
+        setIsLoggedIn(false);
+      }
+    };
+
+    fetchUserData();
   }, []);
 
   const handleLogout = () => {
-    // Clear user data from storage
-    localStorage.removeItem('user');
-    sessionStorage.removeItem('user');
-    setIsLoggedIn(false);
-    // Optionally redirect to home page
-    window.location.href = '/';
+    // Clear user session on the backend
+    fetch('/api/auth/logout', { method: 'POST' }) // Replace with your actual logout API endpoint
+      .then(() => {
+        setIsLoggedIn(false);
+        window.location.href = '/';
+      })
+      .catch((error) => console.error('Failed to log out:', error));
   };
 
   return (
@@ -46,9 +60,9 @@ const Navbar = () => {
                 <Link href="/" className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-800">
                   Homepagina
                 </Link>
-                {/* <Link href="/products" className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-800">
+                <Link href="/producten" className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-800">
                   Producten
-                </Link> */}
+                </Link>
                 <Link href="/nieuws" className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-800">
                   Nieuws
                 </Link>
@@ -67,7 +81,7 @@ const Navbar = () => {
               </a>
               
               {isLoggedIn ? (
-                <UserDropdown userName={userName} onLogout={handleLogout} />
+                <UserDropdown userName={userName} onLogout={handleLogout} isAdmin={isAdmin} />
               ) : (
                 <Link
                   href="/login"
@@ -94,6 +108,7 @@ const Navbar = () => {
           </div>
         </div>
       </div>
+      <InfoBar/>
 
       {/* Mobile menu */}
       {isMenuOpen && (

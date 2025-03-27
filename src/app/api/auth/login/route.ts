@@ -20,24 +20,35 @@ export async function POST(request: Request) {
         where: { email },
       });
 
-      // Check if user exists and verify password
-      if (!user || !(await bcrypt.compare(password, user.password))) {
+      if (!user) {
         return NextResponse.json(
           { error: 'Ongeldige inloggegevens' },
           { status: 401 }
         );
       }
 
-      // Return the user without the password
-      const { password: _, ...userWithoutPassword } = user;
-      
-      return NextResponse.json(
-        { 
-          message: 'Succesvol ingelogd', 
-          user: userWithoutPassword 
-        },
+      // Check if user exists and verify password
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        return NextResponse.json(
+          { error: 'Ongeldige inloggegevens' },
+          { status: 401 }
+        );
+      }
+
+      // Set userId as a cookie
+      const response = NextResponse.json(
+        { message: 'Succesvol ingelogd' },
         { status: 200 }
       );
+      response.cookies.set('userId', user.id, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+        sameSite: 'strict', // Corrected to lowercase
+      });
+
+      return response;
     } catch (dbError) {
       console.error('Database error:', dbError);
       return NextResponse.json(

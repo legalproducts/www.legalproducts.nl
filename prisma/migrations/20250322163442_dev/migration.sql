@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `news` ALTER COLUMN `date` DROP DEFAULT;

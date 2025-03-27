@@ -56,3 +56,22 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export async function GET() {
+  try {
+    // Fetch the 5 most recently registered users
+    const recentUsers = await prisma.user.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      select: { id: true, name: true, createdAt: true },
+    });
+
+    return NextResponse.json(recentUsers, { status: 200 });
+  } catch (error) {
+    console.error('Error fetching recent users:', error);
+    return NextResponse.json(
+      { error: 'Er is een fout opgetreden bij het ophalen van gebruikers' },
+      { status: 500 }
+    );
+  }
+}

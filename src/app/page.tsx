@@ -4,11 +4,14 @@ import TrustBadges from '@/components/TrustBadges';
 import ContactForm from '@/components/ContactForm';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import InfoBar from '@/components/InfoBar'; // Import InfoBar
 import Link from 'next/link';
 import NewsSection from '@/components/NewsSection';
 import { Metadata } from 'next';
 
 export default function Home() {
+  const isEmailVerified = true; // Simuleer de verificatiestatus van de gebruiker
+
   return (
     <main>
       <Navbar />

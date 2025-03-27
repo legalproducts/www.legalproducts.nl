@@ -10,6 +10,7 @@ interface FormData {
   date: string;
   imageUrl: string;
   tag: string;
+  link?: string; // Optional, will be generated if not provided
 }
 
 export default function CreateNews() {
@@ -22,6 +23,7 @@ export default function CreateNews() {
     tag: 'Update'
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setFormData(prev => ({
@@ -86,31 +88,54 @@ export default function CreateNews() {
       .replace(/\n/g, '<br>');
   };
 
+  const formatDate = (dateString: string) => {
+    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString('nl-NL', options);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
     try {
       const formattedDescription = convertMarkdownToHtml(formData.description);
+      
+      // Ensure date is in YYYY-MM-DD format
+      const formattedDate = formData.date;
+      
+      // Log what we're sending to help with debugging
+      console.log('Sending data:', { 
+        ...formData, 
+        description: formattedDescription,
+        date: formattedDate
+      });
+      
       const response = await fetch('/api/news', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          description: formattedDescription
+          description: formattedDescription,
+          date: formattedDate, // Ensure we send the properly formatted date
+          // Generate a link from the title if not provided
+          link: formData.link || `/nieuws/${formData.title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-|-$/g, '')}`
         }),
       });
 
+      const responseData = await response.json();
+      
       if (response.ok) {
-        const data = await response.json();
-        router.push(data.link); // Use the generated link instead of constructing from ID
+        router.push('/admin'); // Redirect to admin dashboard after successful creation
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create news');
+        throw new Error(responseData.error || 'Failed to create news');
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('Er ging iets mis bij het aanmaken van het nieuws: ' + (error as Error).message);
+      setError((error as Error).message || 'Er ging iets mis bij het aanmaken van het nieuws');
     } finally {
       setLoading(false);
     }
@@ -120,6 +145,12 @@ export default function CreateNews() {
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-lg">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Nieuw nieuwsbericht maken</h1>
+        
+        {error && (
+          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-md">
+            {error}
+          </div>
+        )}
         
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Title input */}
@@ -223,6 +254,7 @@ export default function CreateNews() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                 required
               />
+              <p className="text-sm text-gray-500 mt-2">Voorbeeld: {formatDate(formData.date)}</p>
             </div>
 
             <div>
@@ -250,6 +282,20 @@ export default function CreateNews() {
               onChange={(e) => setFormData({...formData, imageUrl: e.target.value})}
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
               required
+            />
+          </div>
+
+          {/* Optional link field */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Link (optioneel - wordt automatisch gegenereerd als leeg)
+            </label>
+            <input
+              type="text"
+              value={formData.link || ''}
+              onChange={(e) => setFormData({...formData, link: e.target.value})}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+              placeholder="/nieuws/mijn-nieuws-titel"
             />
           </div>
 
